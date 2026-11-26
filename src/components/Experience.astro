@@ -1,0 +1,112 @@
+---
+import { readdirSync } from 'node:fs';
+import jobs from '../data/experience.json';
+
+// "logo" and "photo" in experience.json can be a file name without the extension
+// (e.g. "Logo AEC Box"); the file is looked up in public/experience/.
+let files = [];
+try { files = readdirSync('public/experience'); } catch {}
+const asset = (name) => {
+  if (!name) return '';
+  if (name.startsWith('/') || name.startsWith('http')) return name;
+  const base = (f) => f.replace(/\.[^.]+$/, '').toLowerCase();
+  const hit = files.find((f) => f.toLowerCase() === name.toLowerCase()) ?? files.find((f) => base(f) === name.toLowerCase());
+  if (!hit) console.warn(`[experience] file not found in public/experience: "${name}"`);
+  return hit ? `/experience/${encodeURIComponent(hit)}` : '';
+};
+const year = (p) => (String(p).match(/\d{4}/) || [''])[0];
+
+// timeline: a proportional time axis, so overlapping jobs are drawn in separate lanes
+const MONTHS = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+const monthIndex = (s) => { const [m, y] = s.trim().split(/\s+/); return Number(y) * 12 + MONTHS[m]; };
+const items = jobs.map((j, i) => {
+  const [a, b] = j.period.split(/\s*[–-]\s*/);
+  const logo = asset(j.logo);
+  // "mark" (optional): a symbol-only file used for the faint watermark; falls back to the logo
+  return { ...j, i, start: monthIndex(a), end: monthIndex(b || a) + 1, logo, photo: asset(j.photo), mark: asset(j.mark) || logo };
+});
+const timed = items.filter((x) => Number.isFinite(x.start) && Number.isFinite(x.end));
+const min = Math.floor(Math.min(...timed.map((x) => x.start)) / 12) * 12;
+const max = Math.ceil(Math.max(...timed.map((x) => x.end)) / 12) * 12;
+const pct = (n) => ((n - min) / (max - min)) * 100;
+const ticks = Array.from({ length: (max - min) / 12 + 1 }, (_, k) => min / 12 + k);
+const lanes = [];
+for (const it of [...timed].sort((a, b) => a.start - b.start)) {
+  let lane = lanes.find((l) => l[l.length - 1].end <= it.start);
+  if (!lane) { lane = []; lanes.push(lane); }
+  lane.push(it);
+}
+---
+<section id="experience">
+  <div class="xp-panel">
+    <h2>Work Experience</h2>
+    <div class="xp-row">
+      {items.map((j) => (
+        <article class="xp" tabindex="0" data-i={j.i}>
+          <div class="xp-card">
+            <span class="xp-layer xp-active"></span>
+            {j.photo && <img class="xp-layer xp-bg" src={j.photo} alt="" loading="lazy" />}
+            <span class="xp-layer xp-shade"></span>
+            {j.mark && <span class="xp-wm" style={`--s:${j.wmScale ?? 1}`}><img src={j.mark} alt="" /></span>}
+            <div class="xp-year">{year(j.period)}</div>
+            <span class="xp-hint" aria-hidden="true"></span>
+            {j.logo && <img class="xp-logo" src={j.logo} alt={j.company} />}
+            <div class="xp-body">
+              <b>{j.company}</b>
+              <span class="xp-pos">{j.position}</span>
+              <span class="xp-period">{j.period}</span>
+              <div class="xp-more"><div class="xp-more-in">
+                <p>{j.about}</p>
+                <ul>{j.duties.map((d) => <li>{d}</li>)}</ul>
+              </div></div>
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+    <div class="tl" aria-label="Employment timeline">
+      <div class="tl-grid">{ticks.map((y) => <i style={`left:${pct(y * 12)}%`}></i>)}</div>
+      <div class="tl-years">{ticks.slice(0, -1).map((y) => <span style={`left:${pct(y * 12)}%`}>{y}</span>)}</div>
+      {lanes.map((lane) => (
+        <div class="tl-lane">
+          {lane.map((it) => (
+            <div class="tl-item" data-i={it.i} style={`left:${pct(it.start)}%;width:${pct(it.end) - pct(it.start)}%`}>
+              <span class="tl-bar"></span>
+              <span class="tl-label">{it.period}</span>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+<script>
+  const panel = document.querySelector<HTMLElement>('.xp-panel');
+  if (panel) {
+    const cards = [...panel.querySelectorAll<HTMLElement>('.xp')];
+    const marks = [...panel.querySelectorAll<HTMLElement>('.tl-item')];
+    const light = (i: number) => marks.forEach((m) => m.classList.toggle('on', Number(m.dataset.i) === i));
+    const opened = () => cards.findIndex((c) => c.classList.contains('open') && c.dataset.sticky === '1');
+    const compact = matchMedia('(max-width: 900px), (hover: none)');
+    cards.forEach((card, i) => {
+      card.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') light(i); });
+      card.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') light(opened()); });
+      card.addEventListener('focusin', () => light(i));
+      card.addEventListener('focusout', () => light(opened()));
+      // touch / narrow screens: tap to expand, tap again to close
+      card.addEventListener('click', () => {
+        if (!compact.matches) return;
+        const open = !card.classList.contains('open');
+        cards.forEach((c) => { c.classList.remove('open'); c.dataset.sticky = '0'; c.setAttribute('aria-expanded', 'false'); });
+        if (open) { card.classList.add('open'); card.dataset.sticky = '1'; card.setAttribute('aria-expanded', 'true'); }
+        light(open ? i : -1);
+      });
+    });
+    // hovering a bar on the timeline opens its card
+    marks.forEach((m) => {
+      const card = cards[Number(m.dataset.i)];
+      m.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') { card.classList.add('open'); light(Number(m.dataset.i)); } });
+      m.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') { if (card.dataset.sticky !== '1') card.classList.remove('open'); light(opened()); } });
+    });
+  }
+</script>

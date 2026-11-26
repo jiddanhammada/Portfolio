@@ -1,0 +1,91 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import site from '../../data/site.json';
+import { getActivityRows, ACTIVITY_URL } from '../../lib/sanity.js';
+
+let rows = null;
+try { rows = await getActivityRows(); } catch (e) { console.warn('[story] Sanity request failed at build time:', e.message); }
+const initial = JSON.stringify(rows).replace(/</g, '\\u003c');
+---
+<Layout title={`Story · ${site.name}`}>
+  <link slot="head" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,300;0,400;0,500;1,400&display=swap" />
+  <div class="jr" data-story data-url={ACTIVITY_URL} data-site={site.name}>
+    <div data-article aria-busy="true">
+      <div class="jr-skel jr-article-skel" aria-hidden="true"><div class="sk sk-t"></div><div class="sk sk-l w40"></div><div class="sk sk-wide"></div></div>
+    </div>
+  </div>
+  <script is:inline type="application/json" id="act-initial" set:html={initial}></script>
+</Layout>
+<script>
+  import { esc, fmt, src, srcset, pos, isPortrait, normalize, fetchLive, storyHref, stateHTML, reduce } from '../../lib/activity';
+
+  const root = document.querySelector<HTMLElement>('[data-story]');
+  if (root) {
+    const el = root.querySelector<HTMLElement>('[data-article]')!;
+    const slug = new URLSearchParams(location.search).get('p') || '';
+    const pin = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+    let data: any[] = [];
+
+    const gallery = (a: any) => {
+      const rest = a.images.slice(1);
+      if (!rest.length) return '';
+      // editorial rhythm: one wide photo, then unequal pairs; photos keep their own proportions (no cropping)
+      let html = '', i = 0, k = 0;
+      while (i < rest.length) {
+        const left = rest.length - i;
+        const widths = k === 0 || left === 1 ? [12] : k % 2 === 1 ? [7, 5] : [5, 7];
+        const row = rest.slice(i, i + widths.length);
+        const w = row.length === widths.length ? widths : [12];
+        html += row.map((im: any, j: number) =>
+          '<figure class="jr-fig s' + w[j] + (isPortrait(im) ? ' portrait' : '') + '"><img src="' + src(im.url, 1200) + '" srcset="' + srcset(im.url, [600, 1000, 1600]) + '" sizes="(min-width: 900px) ' + Math.round(w[j] / 12 * 90) + 'vw, 100vw" alt="' +
+          esc(im.caption || a.title + ', photo ' + (i + j + 2)) + '" loading="lazy" decoding="async">' + (im.caption ? '<figcaption>' + esc(im.caption) + '</figcaption>' : '') + '</figure>').join('');
+        i += row.length; k++;
+      }
+      return '<section class="jr-gallery" aria-label="Photo gallery">' + html + '</section>';
+    };
+
+    const render = () => {
+      el.setAttribute('aria-busy', 'false');
+      const idx = data.findIndex((a) => a.slug === slug);
+      if (idx < 0) {
+        document.title = 'Story not found · ' + root.dataset.site;
+        el.innerHTML = stateHTML(data.length ? 'Story not found.' : 'No activities yet.', data.length ? 'This story may have moved or been removed.' : 'New moments and experiences will appear here.', '<a class="pill invert" href="/activity">Back to the Activity Journal</a>');
+        return;
+      }
+      const a = data[idx];
+      document.title = a.title + ' · Activity · ' + root.dataset.site;
+      const newer = data[idx - 1], older = data[idx + 1];
+      const cover = a.images[0];
+      const body = a.description.split(/\n\s*\n/).map((p: string) => p.trim()).filter(Boolean).map((p: string) => '<p>' + esc(p).replace(/\n/g, '<br>') + '</p>').join('');
+      el.innerHTML =
+        '<article class="jr-article">' +
+        '<header class="jr-article-head"><a class="jr-back" href="/activity">← Activity Journal</a>' +
+        '<p class="jr-meta">' + (a.category ? '<span>' + esc(a.category) + '</span>' : '') + '<time datetime="' + esc(a.date) + '">' + esc(fmt(a.date)) + '</time>' + (a.location ? '<span class="jr-loc">' + pin + esc(a.location) + '</span>' : '') + '</p>' +
+        '<h1>' + esc(a.title) + '</h1>' +
+        (a.caption ? '<p class="jr-lead">' + esc(a.caption) + '</p>' : '') +
+        (a.organization ? '<p class="jr-org"><span>Event / organization</span>' + esc(a.organization) + '</p>' : '') + '</header>' +
+        (cover ? '<figure class="jr-cover"><img src="' + src(cover.url, 1600) + '" srcset="' + srcset(cover.url, [900, 1600, 2400]) + '" sizes="100vw" alt="' + esc(a.alt || a.title) + '" style="object-position:' + pos(cover) + '" fetchpriority="high" decoding="async">' + (cover.caption ? '<figcaption>' + esc(cover.caption) + '</figcaption>' : '') + '</figure>' : '') +
+        (body ? '<div class="jr-body">' + body + '</div>' : '') +
+        gallery(a) +
+        '<nav class="jr-pn" aria-label="More stories">' +
+        (newer ? '<a href="' + storyHref(newer) + '"><span>← Previous story</span><b>' + esc(newer.title) + '</b></a>' : '<span></span>') +
+        (older ? '<a class="next" href="' + storyHref(older) + '"><span>Next story →</span><b>' + esc(older.title) + '</b></a>' : '<span></span>') +
+        '</nav><p class="jr-return"><a href="/activity">Back to the Activity Journal</a></p></article>';
+    };
+
+    const refreshLive = async () => {
+      try { const next = await fetchLive(root.dataset.url!); if (JSON.stringify(next) !== JSON.stringify(data)) { data = next; render(); } }
+      catch { /* keep the data from the build */ }
+    };
+    const initialRaw = JSON.parse(document.getElementById('act-initial')?.textContent || 'null');
+    if (initialRaw) { data = normalize(initialRaw); render(); refreshLive(); }
+    else fetchLive(root.dataset.url!).then((d) => { data = d; render(); }).catch(() => {
+      el.setAttribute('aria-busy', 'false');
+      el.innerHTML = stateHTML('Unable to load this story.', 'Please check your connection and try again.', '<a class="pill invert" href="/activity">Back to the Activity Journal</a>');
+    });
+
+    if ('IntersectionObserver' in window && !reduce) {
+      root.classList.add('rv-ready');
+    }
+  }
+</script>

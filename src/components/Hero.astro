@@ -1,0 +1,27 @@
+---
+import site from '../data/site.json';
+const [first, ...rest] = site.name.toUpperCase().split(' ');
+const last = rest.join(' ');
+const year = `2K${String(new Date().getFullYear()).slice(2)}`;
+---
+<section class="hero" data-hero>
+  <div class="hero-glow"></div>
+  <h1><span class="n1">{first}</span><span class="n2">{last}</span></h1>
+  <img class="hero-photo" src="/profile.png" alt="" onerror="this.style.display='none'" />
+  <div class="hero-side"><span>{year}</span><i></i><span class="vert">./PORTFOLIO</span></div>
+  <div class="hero-foot">
+    <p>{site.tagline}</p>
+    <div class="row"><a class="pill invert light" href="/projects">View projects</a><a class="pill glass" href="/contact">Get in touch</a></div>
+  </div>
+</section>
+<script>
+  const hero = document.querySelector<HTMLElement>('[data-hero]');
+  if (hero) {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) hero.style.setProperty('--p', '1');
+    else {
+      const update = () => hero.style.setProperty('--p', String(Math.min(1, window.scrollY / 260)));
+      addEventListener('scroll', update, { passive: true });
+      update();
+    }
+  }
+</script>

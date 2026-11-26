@@ -1,0 +1,9 @@
+---
+import Carousel from './Carousel.astro';
+const { title, caption, category, date, images } = Astro.props;
+const d = new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+---
+<article class="card" data-category={category}>
+  <Carousel images={images} />
+  <div class="body"><div class="meta"><i class="dot"></i><span>{category}</span><span>{d}</span></div><h3>{title}</h3><p>{caption}</p></div>
+</article>

@@ -1,0 +1,81 @@
+---
+import { readdirSync } from 'node:fs';
+import site from '../data/site.json';
+const c = site.contact;
+const wa = site.social.find((s) => s.name === 'WhatsApp')?.href;
+
+// Drop a file named "contact-photo" (any extension) into public/ to use it here;
+// otherwise the path in site.json is used.
+let pub = [];
+try { pub = readdirSync('public'); } catch {}
+const found = pub.find((f) => f.replace(/\.[^.]+$/, '').toLowerCase() === 'contact-photo');
+const photo = found ? `/${encodeURIComponent(found)}` : c.photo;
+---
+<section class="touch" id="get-in-touch">
+  <div class="touch-photo"><img src={photo} alt={c.name} onerror="this.style.display='none'" /></div>
+  <div class="touch-text">
+    <span class="touch-badge" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+    </span>
+    <h2>{c.heading}</h2>
+    <p class="touch-hi">{c.hi}</p>
+    <p class="touch-lead">{c.text}</p>
+    <p class="touch-close">{c.close}</p>
+
+    <form class="touch-form" data-touch-form data-key={c.formKey} data-to={site.email}>
+      <div class="touch-row">
+        <label>Name<input name="name" required autocomplete="name" placeholder="Your name" /></label>
+        <label>Email<input name="email" type="email" required autocomplete="email" placeholder="you@example.com" /></label>
+      </div>
+      <label>Message<textarea name="message" rows="4" required placeholder="Tell me a bit about your project or idea"></textarea></label>
+      <input class="hp" type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true" />
+      <div class="touch-actions">
+        <button class="pill invert light" type="submit">Send message</button>
+        <a class="pill glass" href={wa} target="_blank" rel="noopener">Chat on WhatsApp</a>
+      </div>
+      <p class="form-note" role="status"></p>
+    </form>
+
+    <div class="touch-meta">
+      <div><span>Name</span><b>{c.name}</b><small>{c.role}</small></div>
+      <div><span>Email</span><a href={`mailto:${site.email}`}>{site.email}</a></div>
+      <div><span>WhatsApp</span><a href={wa} target="_blank" rel="noopener">{c.phone}</a></div>
+    </div>
+  </div>
+</section>
+<script>
+  document.querySelectorAll<HTMLFormElement>('[data-touch-form]').forEach((form) => {
+    const note = form.querySelector<HTMLElement>('.form-note')!;
+    const button = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form)) as Record<string, string>;
+      if (data.botcheck) return; // spam trap
+      const key = form.dataset.key;
+      if (!key) {
+        // no form service configured yet: open the visitor's email app with the message filled in
+        const subject = encodeURIComponent('Message from ' + data.name);
+        const body = encodeURIComponent(data.message + '\n\n' + data.name + ' (' + data.email + ')');
+        note.textContent = 'Opening your email app...';
+        location.href = 'mailto:' + form.dataset.to + '?subject=' + subject + '&body=' + body;
+        return;
+      }
+      button.disabled = true;
+      note.textContent = 'Sending...';
+      try {
+        const res = await fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ access_key: key, subject: 'Portfolio message from ' + data.name, name: data.name, email: data.email, message: data.message }),
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error('rejected');
+        form.reset();
+        note.textContent = 'Thank you! Your message has been sent. I will get back to you soon.';
+      } catch {
+        note.textContent = 'Something went wrong. Please email me directly instead.';
+      }
+      button.disabled = false;
+    });
+  });
+</script>

@@ -1,0 +1,14 @@
+---
+import ProjectCard from './ProjectCard.astro';
+import { getProjects } from '../lib/sanity.js';
+const projects = await getProjects();
+const sections = [['Completed Projects', 'completed'], ['Ongoing Projects', 'ongoing']]
+  .map(([heading, status]) => [heading, projects.filter((p) => p.status === status)])
+  .filter(([, items]) => items.length > 0);
+---
+{sections.map(([heading, items]) => (
+  <section>
+    <h2>{heading}</h2>
+    <div class="grid wide">{items.map((p) => <ProjectCard {...p} />)}</div>
+  </section>
+))}

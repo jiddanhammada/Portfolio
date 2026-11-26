@@ -1,0 +1,31 @@
+---
+import '../styles/global.css';
+import site from '../data/site.json';
+import Footer from '../components/Footer.astro';
+const { title = site.name } = Astro.props;
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <title>{title}</title>
+    <slot name="head" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="nav">
+        <ul class="pills">{site.nav.map((n) => <li><a class="pill" href={n.href}>{n.label}</a></li>)}</ul>
+        <a class="brand" href="/"><img src="/logo.svg" alt={site.name} onerror="this.outerHTML=this.alt" /></a>
+        <a class="pill invert" href="/contact">Start a project</a>
+      </header>
+    </div>
+    <slot name="hero" />
+    <div class="wrap">
+      <main><slot /></main>
+    </div>
+    <Footer />
+  </body>
+</html>

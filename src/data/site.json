@@ -1,0 +1,63 @@
+{
+  "name": "Jiddan Hammada",
+  "tagline": "Design that communicates clearly.",
+  "intro": "Digital Business student and designer, building brands, websites, and interfaces.",
+  "email": "hammadajiddan@gmail.com",
+  "nav": [
+    {
+      "label": "Home",
+      "href": "/"
+    },
+    {
+      "label": "About Me",
+      "href": "/about"
+    },
+    {
+      "label": "Projects",
+      "href": "/projects"
+    },
+    {
+      "label": "Activity",
+      "href": "/activity"
+    },
+    {
+      "label": "Contact",
+      "href": "/contact"
+    }
+  ],
+  "footerHeading": "Let's work together.",
+  "footerText": "Analyst by training, designer by instinct. Always up for a chat.",
+  "social": [
+    {
+      "name": "LinkedIn",
+      "icon": "linkedin",
+      "href": "https://www.linkedin.com/in/jiddan-hammada/"
+    },
+    {
+      "name": "Instagram",
+      "icon": "instagram",
+      "href": "https://www.instagram.com/jiddan.hammada"
+    },
+    {
+      "name": "Threads",
+      "icon": "threads",
+      "href": "https://www.threads.com/@jiddan_hammada"
+    },
+    {
+      "name": "WhatsApp",
+      "icon": "whatsapp",
+      "href": "https://wa.me/6285881186490"
+    }
+  ],
+  "contact": {
+    "heading": "Let's get in touch",
+    "hi": "Let's connect,",
+    "text": "Got a project in mind, a question about my work, or just want to say hi? Drop me a message. I read everything and reply as soon as I can.",
+    "close": "Let's build something clear, useful, and a little bit memorable together.",
+    "name": "Hammada Fawzi Jiddan",
+    "role": "Digital Business student at BINUS University @Semarang",
+    "phone": "+62 858-8118-6490",
+    "photo": "/profile.png",
+    "formKey": ""
+  }
+}

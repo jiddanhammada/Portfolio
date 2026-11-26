@@ -1,0 +1,149 @@
+{
+  "hero": {
+    "greeting": "Hello, I'm",
+    "name": "Jiddan.",
+    "fullName": "Hammada Fawzi Jiddan",
+    "title": "Analyst by training, designer by instinct.",
+    "intro": "Digital Business student at BINUS University @Semarang, focused on UI/UX and visual design, and building experience in data and analytics. I enjoy turning ideas into clear, functional digital experiences.",
+    "photo": "/profile.png"
+  },
+  "story": {
+    "heading": "A Little About My Journey",
+    "paragraphs": [
+      "I'm a **Digital Business student** at BINUS University @Semarang, with a focus on **UI/UX and visual design**.",
+      "My design journey started in **2019**. I began with **graphic design** and, over time, grew into creating intuitive app and website interfaces in **Figma**. Through the projects I've worked on, I've built strong skills in prototyping, visual design, and user-focused thinking.",
+      "Alongside design, I've been building a second side: **analysis**. I built a machine learning system that predicts machine failure, designed an n8n workflow to automate order fulfillment for a smart aquaculture startup, and worked in a four-person team on research about AI-integrated learning, including preparing the manuscript.",
+      "What ties it together is what I enjoy most: **turning ideas into clear, functional digital experiences**. And I'm always up for a chat."
+    ]
+  },
+  "skills": [
+    {
+      "title": "Design & Creative",
+      "items": [
+        {
+          "name": "UI/UX design",
+          "note": "App and website interfaces in Figma"
+        },
+        {
+          "name": "Prototyping",
+          "note": "Interactive prototypes with a user-focused approach"
+        },
+        {
+          "name": "Graphic design & branding",
+          "note": "Posters, social media visuals, and marketing materials"
+        },
+        {
+          "name": "Content creation",
+          "note": "Videos, thumbnails, and social media posts"
+        }
+      ]
+    },
+    {
+      "title": "Data & Technical",
+      "items": [
+        {
+          "name": "Python & machine learning",
+          "note": "Regression, classification, and deployment"
+        },
+        {
+          "name": "Data mining",
+          "note": "Decision Tree, Naive Bayes, Linear Regression, and K-Means"
+        },
+        {
+          "name": "Workflow automation",
+          "note": "n8n with Google Sheets, Gmail, and Google Calendar"
+        },
+        {
+          "name": "Statistical research",
+          "note": "PLS-SEM in SmartPLS and mixed-methods design"
+        }
+      ]
+    },
+    {
+      "title": "Business & Professional",
+      "items": [
+        {
+          "name": "Research & writing",
+          "note": "Journal-standard manuscript and SEO articles"
+        },
+        {
+          "name": "Process mapping",
+          "note": "Interviews with operations and sales teams"
+        },
+        {
+          "name": "Administration",
+          "note": "Document handling and record-keeping"
+        },
+        {
+          "name": "Teamwork",
+          "note": "Four-person team and research projects"
+        }
+      ]
+    }
+  ],
+  "toolGroups": [
+    {
+      "title": "Design",
+      "items": [
+        {
+          "name": "Figma"
+        }
+      ]
+    },
+    {
+      "title": "Data & Analytics",
+      "items": [
+        {
+          "name": "Google Colab"
+        },
+        {
+          "name": "Tableau"
+        },
+        {
+          "name": "Python"
+        },
+        {
+          "name": "RapidMiner / Altair AI Studio"
+        },
+        {
+          "name": "SmartPLS"
+        }
+      ]
+    },
+    {
+      "title": "Automation & Productivity",
+      "items": [
+        {
+          "name": "n8n"
+        },
+        {
+          "name": "Microsoft Excel"
+        },
+        {
+          "name": "Google Sheets"
+        }
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "BINUS University @Semarang",
+      "program": "Digital Business",
+      "status": "Current student",
+      "period": "",
+      "detail": "Focus on UI/UX and visual design."
+    },
+    {
+      "institution": "Nalar Data Science & Analyst Bootcamp",
+      "program": "Machine Learning capstone project",
+      "status": "Bootcamp",
+      "period": "January 2026 – May 2026",
+      "detail": "Python, regression and classification, and deployment. Scored 80/100 on the capstone evaluation."
+    }
+  ],
+  "interests": [],
+  "cta": {
+    "heading": "Interested in Knowing More About My Work?",
+    "text": "Explore my projects, discover my professional journey, or get in touch. I'd be happy to connect."
+  }
+}

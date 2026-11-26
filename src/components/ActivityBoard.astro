@@ -1,0 +1,60 @@
+---
+import Carousel from './Carousel.astro';
+const { posts = [], filters = false } = Astro.props;
+const fmt = (d) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const cats = ['All', ...new Set(posts.map((p) => p.category))];
+---
+{posts.length === 0 ? <p class="empty">No activity yet.</p> : (
+  <div data-board>
+    {filters && <div class="filters">{cats.map((c, i) => <button class={i === 0 ? 'on' : ''} data-filter={c}>{c}</button>)}</div>}
+    <div class="board-grid">
+      <div>
+        {posts.map((p, i) => (
+          <article class="feature" data-id={i} hidden={i !== 0}>
+            <Carousel images={p.images} />
+            <div class="body">
+              <div class="meta"><span class="chip"><i class="dot"></i>{p.category}</span><span>{fmt(p.date)}</span></div>
+              <h3>{p.title}</h3>
+              <p>{p.caption}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+      <div>
+        <p class="history-label">History</p>
+        <ul class="history">
+          {posts.map((p, i) => (
+            <li>
+              <button class={`h-item${i === 0 ? ' on' : ''}`} data-select={i} data-category={p.category}>
+                {p.images[0] ? <img class="h-thumb" src={p.images[0]} alt="" loading="lazy" /> : <span class="h-thumb"></span>}
+                <span><span class="h-date">{fmt(p.date)} · {p.category}</span><span class="h-title">{p.title}</span></span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </div>
+)}
+<script>
+  document.querySelectorAll<HTMLElement>('[data-board]').forEach((board) => {
+    const feats = board.querySelectorAll<HTMLElement>('.feature');
+    const items = board.querySelectorAll<HTMLElement>('[data-select]');
+    const select = (i: string) => {
+      feats.forEach((f) => (f.hidden = f.dataset.id !== i));
+      items.forEach((b) => b.classList.toggle('on', b.dataset.select === i));
+    };
+    items.forEach((b) => b.addEventListener('click', () => select(b.dataset.select!)));
+    const buttons = board.querySelectorAll<HTMLElement>('[data-filter]');
+    buttons.forEach((btn) => btn.addEventListener('click', () => {
+      buttons.forEach((x) => x.classList.toggle('on', x === btn));
+      let first: string | null = null;
+      items.forEach((b) => {
+        const show = btn.dataset.filter === 'All' || b.dataset.category === btn.dataset.filter;
+        b.parentElement!.hidden = !show;
+        if (show && first === null) first = b.dataset.select!;
+      });
+      if (first !== null) select(first);
+    }));
+  });
+</script>

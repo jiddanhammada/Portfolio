@@ -1,0 +1,204 @@
+---
+import { readdirSync } from 'node:fs';
+import Layout from '../layouts/Layout.astro';
+import site from '../data/site.json';
+import { getActivityRows, ACTIVITY_URL } from '../lib/sanity.js';
+
+// If Sanity cannot be reached at build time the page still builds; the browser then loads the data itself.
+let rows = null;
+try { rows = await getActivityRows(); } catch (e) { console.warn('[activity] Sanity request failed at build time:', e.message); }
+const initial = JSON.stringify(rows).replace(/</g, '\\u003c');
+// Optional: a file named "journal-hero" (any extension) in public/ is used as the hero photo.
+let heroFile = '';
+try {
+  const f = readdirSync('public').find((x) => x.replace(/\.[^.]+$/, '').toLowerCase() === 'journal-hero');
+  if (f) heroFile = `/${encodeURIComponent(f)}`;
+} catch {}
+---
+<Layout title={`Activity · ${site.name}`}>
+  <link slot="head" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,300;0,400;0,500;1,400&display=swap" />
+  <div class="jr" data-jr data-url={ACTIVITY_URL} data-hero-file={heroFile}>
+
+    <!-- 01 HERO -->
+    <header class="jr-hero rv">
+      <div class="jr-hero-media" data-hero-media aria-hidden="true"></div>
+      <div class="jr-hero-top">
+        <span class="jr-kick">Personal Journal</span>
+        <span class="jr-kick jr-kick-r"><em>Field Notes</em><em>Life &amp; Experiences</em><b data-hero-date></b></span>
+      </div>
+      <div class="jr-hero-bottom">
+        <h1>Beyond the Work.</h1>
+        <p>A collection of experiences, discoveries, and moments that shape my journey beyond professional work.</p>
+      </div>
+    </header>
+
+    <!-- 02 FEATURED STORY -->
+    <section class="jr-featured rv" data-featured aria-label="Featured story" aria-busy="true">
+      <div class="jr-story jr-skel" aria-hidden="true">
+        <div class="sk sk-wide"></div>
+        <div class="jr-story-text"><div class="sk sk-l w30"></div><div class="sk sk-t"></div><div class="sk sk-l"></div><div class="sk sk-l w70"></div></div>
+      </div>
+      <noscript><p class="empty">The journal needs JavaScript to load.</p></noscript>
+    </section>
+
+    <!-- 03 ARCHIVE (appears once there is more than one story) -->
+    <section class="jr-archive rv" data-archive aria-labelledby="jr-archive-h" hidden>
+      <header class="jr-archive-head">
+        <h2 id="jr-archive-h">More Moments &amp; Experiences</h2>
+        <p>Fragments of my journey, captured through activities, events, and experiences.</p>
+      </header>
+      <div class="jr-filters" role="group" aria-label="Filter stories by category" data-filters hidden></div>
+      <p class="sr-only" aria-live="polite" data-live></p>
+      <div class="jr-grid" data-grid></div>
+    </section>
+
+    <!-- 04 CLOSING -->
+    <section class="jr-closing rv" aria-labelledby="jr-closing-h">
+      <h2 id="jr-closing-h">Life Beyond the Portfolio.</h2>
+      <p>Every experience contributes to the person behind the work.</p>
+      <nav class="jr-links" aria-label="Continue exploring">
+        <a href="/projects">Explore Projects <i aria-hidden="true">→</i></a>
+        <a href="/#achievements">View Achievements <i aria-hidden="true">→</i></a>
+        <a href="/contact">Contact Me <i aria-hidden="true">→</i></a>
+      </nav>
+    </section>
+
+  </div>
+  <script is:inline type="application/json" id="act-initial" set:html={initial}></script>
+</Layout>
+<script>
+  import { esc, fmt, src, srcset, pos, normalize, fetchLive, storyHref, stateHTML, carouselHTML, initCarousel, reduce } from '../lib/activity';
+
+  const root = document.querySelector<HTMLElement>('[data-jr]');
+  if (root) {
+    const q = (s: string) => root.querySelector<HTMLElement>(s)!;
+    const heroMedia = q('[data-hero-media]'), heroDate = q('[data-hero-date]');
+    const featuredEl = q('[data-featured]'), archiveEl = q('[data-archive]');
+    const filtersEl = q('[data-filters]'), gridEl = q('[data-grid]'), liveEl = q('[data-live]');
+    const pin = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+
+    let data: any[] = [];
+    let filter = 'All';
+    let stopCarousel: () => void = () => {};
+
+    // ---------- hero ----------
+    const renderHero = () => {
+      const latest = data[0];
+      heroDate.textContent = latest ? 'Latest entry · ' + fmt(latest.date) : '';
+      let html = '';
+      if (root.dataset.heroFile) html = '<img src="' + root.dataset.heroFile + '" alt="" fetchpriority="high" decoding="async">';
+      else if (latest && latest.images.length) {
+        const im = latest.images[latest.images.length > 1 ? 1 : 0];
+        html = '<img src="' + src(im.url, 1800) + '" srcset="' + srcset(im.url, [1000, 1800, 2600]) + '" sizes="100vw" alt="" style="object-position:' + pos(im) + '" fetchpriority="high" decoding="async">';
+      }
+      heroMedia.innerHTML = html;
+    };
+
+    // ---------- featured story ----------
+    const meta = (a: any) => '<p class="jr-meta">' + (a.category ? '<span>' + esc(a.category) + '</span>' : '') + '<time datetime="' + esc(a.date) + '">' + esc(fmt(a.date)) + '</time>' +
+      (a.location ? '<span class="jr-loc">' + pin + esc(a.location) + '</span>' : '') + '</p>';
+    const renderFeatured = () => {
+      stopCarousel(); stopCarousel = () => {};
+      featuredEl.setAttribute('aria-busy', 'false');
+      const a = data[0];
+      const href = storyHref(a);
+      const media = a.images.length > 1
+        ? '<div class="jr-story-media">' + carouselHTML(a, '(min-width: 900px) 62vw, 100vw') + '</div>'
+        : a.images.length
+          ? '<a class="jr-story-media" href="' + href + '" tabindex="-1" aria-hidden="true"><img src="' + src(a.images[0].url, 1400) + '" srcset="' + srcset(a.images[0].url, [800, 1400, 2000]) + '" sizes="(min-width: 900px) 62vw, 100vw" alt="" style="object-position:' + pos(a.images[0]) + '" fetchpriority="high" decoding="async"></a>'
+          : '<div class="jr-story-media"><div class="jr-ph"></div></div>';
+      featuredEl.innerHTML =
+        '<article class="jr-story">' + media +
+        '<div class="jr-story-text"><p class="jr-label">Featured story</p>' + meta(a) +
+        '<h2 class="jr-title"><a href="' + href + '">' + esc(a.title) + '</a></h2>' +
+        (a.caption ? '<p class="jr-excerpt">' + esc(a.caption) + '</p>' : '') +
+        (a.organization ? '<p class="jr-org"><span>Event / organization</span>' + esc(a.organization) + '</p>' : '') +
+        '<a class="jr-read" href="' + href + '">Read the story <i aria-hidden="true">→</i></a></div></article>';
+      stopCarousel = initCarousel(featuredEl.querySelector<HTMLElement>('.ac'));
+    };
+
+    // ---------- archive: a magazine grid that adapts to the number of stories ----------
+    const plan = (n: number) => {
+      const cycle = [[7, 5], [4, 4, 4], [5, 7], [4, 4, 4]];
+      const out: number[] = [];
+      for (let i = 0, k = 0; i < n; k++) {
+        const left = n - i;
+        let row = cycle[k % 4];
+        if (left < row.length) row = left === 1 ? [12] : left === 2 ? [6, 6] : [4, 4, 4];
+        out.push(...row); i += row.length;
+      }
+      return out;
+    };
+    const card = (a: any, span: number) => {
+      const im = a.images[0];
+      const img = im
+        ? '<img src="' + src(im.url, 900) + '" srcset="' + srcset(im.url, [480, 900, 1400]) + '" sizes="(min-width: 1000px) ' + Math.round(span / 12 * 100) + 'vw, 100vw" alt="' + esc(a.alt || a.title) + '" style="object-position:' + pos(im) + '" loading="lazy" decoding="async">'
+        : '<div class="jr-ph"></div>';
+      return '<a class="jr-card s' + span + '" href="' + storyHref(a) + '"><div class="jr-card-img">' + img + '</div>' + meta(a) +
+        '<h3>' + esc(a.title) + '</h3>' + (a.caption ? '<p class="jr-desc">' + esc(a.caption) + '</p>' : '') +
+        '<span class="jr-read">Read the story <i aria-hidden="true">→</i></span></a>';
+    };
+    const renderArchive = () => {
+      const more = data.slice(1);
+      archiveEl.hidden = more.length === 0;
+      if (!more.length) return;
+      const cats = [...new Set(more.map((a) => a.category).filter(Boolean))] as string[];
+      if (filter !== 'All' && !cats.includes(filter)) filter = 'All';
+      filtersEl.hidden = cats.length < 2;
+      filtersEl.innerHTML = ['All'].concat(cats).map((c) => '<button type="button" class="' + (c === filter ? 'on' : '') + '" data-f="' + esc(c) + '" aria-pressed="' + (c === filter) + '">' + (c === 'All' ? 'All Activities' : esc(c)) + '</button>').join('');
+      const list = filter === 'All' ? more : more.filter((a) => a.category === filter);
+      const spans = plan(list.length);
+      gridEl.innerHTML = list.map((a, i) => card(a, spans[i])).join('');
+    };
+
+    // ---------- states ----------
+    const renderAll = () => {
+      if (!data.length) {
+        stopCarousel(); heroMedia.innerHTML = ''; heroDate.textContent = ''; archiveEl.hidden = true;
+        featuredEl.setAttribute('aria-busy', 'false');
+        featuredEl.innerHTML = stateHTML('No activities yet.', 'New moments and experiences will appear here.');
+        return;
+      }
+      renderHero(); renderFeatured(); renderArchive();
+    };
+    const showSkeleton = () => {
+      featuredEl.setAttribute('aria-busy', 'true');
+      featuredEl.innerHTML = '<div class="jr-story jr-skel" aria-hidden="true"><div class="sk sk-wide"></div><div class="jr-story-text"><div class="sk sk-l w30"></div><div class="sk sk-t"></div><div class="sk sk-l"></div></div></div>';
+    };
+    const load = async () => {
+      showSkeleton();
+      try { data = await fetchLive(root.dataset.url!); renderAll(); }
+      catch {
+        archiveEl.hidden = true;
+        featuredEl.setAttribute('aria-busy', 'false');
+        featuredEl.innerHTML = stateHTML('Unable to load activities.', 'Please check your connection and try again.', '<button class="pill invert" type="button" data-retry>Retry</button>');
+      }
+    };
+    // newer stories show up without rebuilding the site; a failed request keeps what is on screen
+    const refreshLive = async () => {
+      try { const next = await fetchLive(root.dataset.url!); if (JSON.stringify(next) !== JSON.stringify(data)) { data = next; renderAll(); } }
+      catch { /* keep the data from the build */ }
+    };
+
+    // ---------- events ----------
+    filtersEl.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('[data-f]');
+      if (!b || b.dataset.f === filter) return;
+      filter = b.dataset.f!;
+      renderArchive();
+      liveEl.textContent = 'Showing ' + (filter === 'All' ? 'all activities' : filter);
+      gridEl.classList.remove('pop'); void gridEl.offsetWidth; gridEl.classList.add('pop');
+    });
+    featuredEl.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('[data-retry]')) load(); });
+
+    const initialRaw = JSON.parse(document.getElementById('act-initial')?.textContent || 'null');
+    if (initialRaw) { data = normalize(initialRaw); renderAll(); refreshLive(); } else load();
+
+    // fade in on scroll
+    if ('IntersectionObserver' in window && !reduce) {
+      root.classList.add('rv-ready');
+      const io = new IntersectionObserver((entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.08, rootMargin: '0px 0px -6% 0px' });
+      root.querySelectorAll('.rv').forEach((el) => io.observe(el));
+    }
+  }
+</script>

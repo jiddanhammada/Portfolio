@@ -1,0 +1,22 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Hero from '../components/Hero.astro';
+import Tools from '../components/Tools.astro';
+import Projects from '../components/Projects.astro';
+import Achievements from '../components/Achievements.astro';
+import GetInTouch from '../components/GetInTouch.astro';
+import Experience from '../components/Experience.astro';
+import ActivityBoard from '../components/ActivityBoard.astro';
+import { getPosts } from '../lib/sanity.js';
+const posts = await getPosts();
+const latest = posts.slice(0, 6);
+---
+<Layout>
+  <Hero slot="hero" />
+  <Tools />
+  <Projects />
+  <section><h2>Recent Activity</h2><ActivityBoard posts={latest} /></section>
+  <Experience />
+  <Achievements />
+  <GetInTouch />
+</Layout>

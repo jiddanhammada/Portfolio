@@ -1,0 +1,168 @@
+---
+import Layout from '../layouts/Layout.astro';
+import site from '../data/site.json';
+import ProjectsEditorial from '../components/ProjectsEditorial.astro';
+import ProjectVisual from '../components/ProjectVisual.astro';
+import { getProjects } from '../lib/sanity.js';
+
+const projects = await getProjects();
+// featured projects lead; the rest keep their newest-first order
+const ordered = [...projects].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+const cats = [...new Set(ordered.map((p) => p.type).filter(Boolean))];
+const pad = (n) => String(n).padStart(2, '0');
+// a category that holds every project reuses the "All" composition instead of repeating it
+const filters = [{ label: 'All Projects', key: 'All', target: 'All', count: ordered.length }].concat(
+  cats.map((c) => { const list = ordered.filter((p) => p.type === c); return { label: c, key: c, target: list.length === ordered.length ? 'All' : c, count: list.length }; })
+);
+const views = [{ key: 'All', list: ordered }].concat(
+  filters.filter((f) => f.key !== 'All' && f.target !== 'All').map((f) => ({ key: f.key, list: ordered.filter((p) => p.type === f.key) }))
+);
+// Abstract chart in the hero: one point per project (up to 6), labelled with the same numbers as the index.
+const nPts = Math.min(Math.max(projects.length, 2), 6);
+const years = projects.map((p) => new Date(p.date).getFullYear()).filter(Boolean);
+const lastYear = years.length ? Math.max(...years) : '';
+const pts = Array.from({ length: nPts }, (_, i) => ({ x: Math.round(40 + i * (440 / (nPts - 1))), y: Math.round(150 - (i / (nPts - 1)) * 88 + (i % 2 ? 8 : -6)) }));
+const poly = pts.map((q) => `${q.x},${q.y}`).join(' ');
+const last = pts[pts.length - 1];
+const prev = pts[pts.length - 2];
+// the closing section previews up to three real projects (their cover, or the same abstract placeholder as the project list)
+const previews = ordered.slice(0, 3);
+const STATEMENT = 'Selected work exploring the intersection of technology, design, and business.';
+---
+<Layout title={`Projects · ${site.name}`}>
+  <div class="pj" data-pj>
+
+    <div class="pjx-top">
+      <span class="pjx-deco-num" aria-hidden="true">{pad(projects.length)}</span>
+
+      <header class="pjx-hero rv">
+        <div>
+          <p class="ab-label"><i></i>Projects / Selected work</p>
+          <h1>Selected<br />Projects</h1>
+          <p class="pjx-intro">A collection of projects, creative explorations, and practical solutions that reflect my skills, interests, and professional journey.</p>
+          <dl class="pjx-stats">
+            <div><dd>{pad(projects.length)}</dd><dt>{projects.length === 1 ? 'Project' : 'Projects'}</dt></div>
+            <div><dd>{pad(cats.length)}</dd><dt>{cats.length === 1 ? 'Category' : 'Categories'}</dt></div>
+          </dl>
+        </div>
+        {ordered.length > 0 && (
+          <div class="pjx-side">
+            {projects.length >= 2 && (
+              <svg class="pjx-chart" viewBox="0 0 520 200" aria-hidden="true" focusable="false">
+                <line x1="40" y1="170" x2="480" y2="170" stroke="rgba(16,45,82,.3)" stroke-width="1" />
+                {pts.map((q, i) => (
+                  <g>
+                    <line x1={q.x} y1={q.y} x2={q.x} y2="170" stroke="rgba(16,45,82,.22)" stroke-dasharray="2 4" />
+                    <line x1={q.x} y1="170" x2={q.x} y2="175" stroke="rgba(16,45,82,.3)" />
+                    <text x={q.x} y="192" text-anchor="middle">{pad(i + 1)}</text>
+                  </g>
+                ))}
+                <polyline points={poly} fill="none" stroke="rgba(16,45,82,.4)" stroke-width="1.25" />
+                <line x1={prev.x} y1={prev.y} x2={last.x} y2={last.y} stroke="#F59E0B" stroke-width="1.75" />
+                {pts.slice(0, -1).map((q) => <circle cx={q.x} cy={q.y} r="3" fill="rgba(16,45,82,.55)" />)}
+                <circle cx={last.x} cy={last.y} r="4" fill="#F59E0B" />
+                <circle cx={last.x} cy={last.y} r="9" fill="none" stroke="#F59E0B" stroke-opacity=".4" />
+                <line x1="8" y1="14" x2="32" y2="14" stroke="#F59E0B" stroke-width="2" />
+                <text x="40" y="18">N = {pad(projects.length)}</text>
+                {lastYear && <text x="480" y="18" text-anchor="end">{lastYear}</text>}
+              </svg>
+            )}
+            <nav class="pjx-index" aria-label="Project index">
+              <p>Index</p>
+              <ol>{ordered.slice(0, 6).map((p, i) => <li><a href={`/projects/${p.slug}`}><span>{pad(i + 1)}</span>{p.title}</a></li>)}</ol>
+            </nav>
+          </div>
+        )}
+      </header>
+
+      {projects.length === 0 && <p class="empty">Projects are on their way.</p>}
+
+      {filters.length > 1 && (
+        <div class="pjx-filters rv" role="group" aria-label="Filter projects by category">
+          {filters.map((f, i) => <button type="button" class={i === 0 ? 'on' : ''} data-filter={f.key} data-target={f.target} aria-pressed={i === 0 ? 'true' : 'false'}>{f.label} <span>{pad(f.count)}</span></button>)}
+        </div>
+      )}
+    </div>
+    <p class="sr-only" aria-live="polite" data-live></p>
+
+    <div class="pjx-board">
+      {views.map((v, i) => (
+        <div class="pjx-view" data-view={v.key} hidden={i !== 0}>
+          <ProjectsEditorial list={v.list} statement={STATEMENT} />
+        </div>
+      ))}
+    </div>
+
+    <section class="ab-band ab-cta pjx-cta" aria-labelledby="pj-cta-h">
+      <div class={`ab-cta-in rv${previews.length ? '' : ' solo'}`}>
+        <div class="pjx-cta-text">
+          <p class="ab-label"><i></i>Contact</p>
+          <h2 id="pj-cta-h">Have an interesting project in mind?</h2>
+          <p class="ab-cta-text">I'm always interested in exploring new ideas, creative challenges, and meaningful collaboration.</p>
+          <div class="ab-actions">
+            <a class="pill invert light" href={`mailto:${site.email}`}>Let's Work Together</a>
+            <a class="pill glass" href="/contact">Get in Touch</a>
+          </div>
+        </div>
+        {previews.length > 0 && (
+          <div class="pjx-cta-visual">
+            <svg class="pjx-lines" viewBox="0 0 600 500" aria-hidden="true" focusable="false">
+              {previews.length >= 2 && (
+                <g fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1">
+                  <path d="M372 60H470V200" />
+                  <circle cx="372" cy="60" r="3.5" fill="#102D52" />
+                  <circle cx="470" cy="200" r="4" fill="#F59E0B" stroke="none" />
+                  <circle cx="470" cy="200" r="9" stroke="rgba(245,158,11,.45)" />
+                </g>
+              )}
+              {previews.length >= 3 && (
+                <g class="l2" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1">
+                  <path d="M372 291V330H260" />
+                  <circle cx="372" cy="291" r="3.5" fill="#102D52" />
+                  <circle cx="260" cy="330" r="3.5" fill="#102D52" />
+                </g>
+              )}
+              <line x1="8" y1="14" x2="34" y2="14" stroke="#F59E0B" stroke-width="2" />
+            </svg>
+            {previews.map((p, i) => (
+              <a class={`pjx-pv ${'abc'[i]}`} href={`/projects/${p.slug}`}>
+                <ProjectVisual p={p} n={pad(i + 1)} alt="" sizes="(min-width: 900px) 30vw, 80vw" />
+                <span class="pjx-pv-cap"><b>{pad(i + 1)}</b>{p.title}</span>
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+
+  </div>
+</Layout>
+<script>
+  const root = document.querySelector<HTMLElement>('[data-pj]');
+  if (root) {
+    const buttons = [...root.querySelectorAll<HTMLButtonElement>('[data-filter]')];
+    const views = [...root.querySelectorAll<HTMLElement>('[data-view]')];
+    const live = root.querySelector<HTMLElement>('[data-live]');
+    buttons.forEach((b) => b.addEventListener('click', () => {
+      buttons.forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', String(on)); });
+      views.forEach((v) => {
+        const show = v.dataset.view === b.dataset.target;
+        if (show && v.hidden) {
+          v.hidden = false;
+          v.querySelectorAll('.rv').forEach((el) => el.classList.add('in'));
+          v.classList.remove('pop'); void v.offsetWidth; v.classList.add('pop');
+        } else if (!show) v.hidden = true;
+      });
+      if (live) live.textContent = 'Showing ' + b.textContent!.trim();
+    }));
+
+    // fade in on scroll
+    if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      root.classList.add('rv-ready');
+      const io = new IntersectionObserver((entries) => entries.forEach((e) => {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      }), { threshold: 0.1, rootMargin: '0px 0px -6% 0px' });
+      root.querySelectorAll('.rv').forEach((el) => io.observe(el));
+    }
+  }
+</script>

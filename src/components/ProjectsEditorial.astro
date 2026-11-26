@@ -1,0 +1,17 @@
+---
+import ProjectTile from './ProjectTile.astro';
+// One editorial composition for a list of projects: a lead project, two supporting projects,
+// a short statement, then the remaining projects. Every project uses the same horizontal layout
+// (visual on the left, text on the right); the lead simply has the largest title.
+const { list = [], statement = '' } = Astro.props;
+const lead = list[0];
+const rest = list.slice(1);
+const supporting = rest.slice(0, 2);
+const additional = rest.slice(2);
+let n = 0;
+const next = () => ++n;
+---
+{lead && <div class="pjx-first rv"><ProjectTile p={lead} n={next()} variant="lead" /></div>}
+{supporting.map((p) => <div class="pjx-single rv"><ProjectTile p={p} n={next()} variant="row" /></div>)}
+{additional.length > 0 && statement && <aside class="pjx-statement rv" aria-label="Statement"><p>{statement}</p></aside>}
+{additional.map((p) => <div class="pjx-single rv"><ProjectTile p={p} n={next()} variant="row" /></div>)}

@@ -1,0 +1,141 @@
+{
+  "predictive-maintenance-system": {
+    "projectType": "Bootcamp capstone",
+    "background": "A machine learning capstone project for the Nalar Data Science & Analyst Bootcamp, built with Python (regression and classification) and taken through to deployment.",
+    "problem": "Factories want to prevent downtime and reduce maintenance cost.\n\nThe question behind this project: can machine failure be predicted **before breakdown**?",
+    "objectives": [
+      "Predict machine failure before breakdown",
+      "Help factories prevent downtime and reduce maintenance cost"
+    ],
+    "role": "Built a machine learning system to predict machine failure before breakdown, and applied the full data science pipeline: EDA, preprocessing, model building, and deployment.",
+    "process": [
+      {
+        "title": "Exploratory data analysis"
+      },
+      {
+        "title": "Preprocessing"
+      },
+      {
+        "title": "Model building",
+        "text": "Regression and classification models in Python."
+      },
+      {
+        "title": "Deployment"
+      }
+    ],
+    "outcome": "A machine learning system that predicts machine failure before breakdown, taken through to deployment as the capstone deliverable.",
+    "results": [
+      {
+        "value": "80/100",
+        "label": "Capstone evaluation score",
+        "kind": "measured"
+      }
+    ]
+  },
+  "crustea-order-fulfillment-automation": {
+    "projectType": "University team project",
+    "team": "4-person team",
+    "background": "Crustea is an Indonesian smart aquaculture startup. The project was carried out as a team project at BINUS University.",
+    "problem": "Crustea handled order fulfillment through a **fully manual process**.",
+    "objectives": [
+      "Map the existing manual order fulfillment process",
+      "Design a structured workflow to automate it"
+    ],
+    "role": "A 4-person team project. The team interviewed Crustea's operations and sales team to map the manual order fulfillment process, then designed a 6-phase, 21-node n8n workflow.",
+    "process": [
+      {
+        "title": "Understanding the business process",
+        "text": "Interviews with Crustea's operations and sales team to map the fully manual order fulfillment process."
+      },
+      {
+        "title": "Designing the workflow",
+        "text": "A 6-phase, 21-node n8n workflow covering validation, stock check, quotation, scheduling, logistics, and customer notification."
+      }
+    ],
+    "outcome": "A designed n8n workflow that covers order fulfillment from validation through to customer notification.",
+    "results": [
+      {
+        "value": "6",
+        "label": "Workflow phases",
+        "kind": "deliverable",
+        "text": "Validation, stock check, quotation, scheduling, logistics, and customer notification."
+      },
+      {
+        "value": "21",
+        "label": "n8n nodes",
+        "kind": "deliverable"
+      }
+    ]
+  },
+  "customer-repeat-purchase-prediction": {
+    "team": "Individual project",
+    "background": "An analysis of a 10,000-row customer dataset for a retail use case, carried out in RapidMiner / Altair AI Studio.",
+    "problem": "A retail use case: can **repeat purchase behavior** be predicted from customer data?",
+    "objectives": [
+      "Predict repeat purchase behavior",
+      "Compare Decision Tree, Naive Bayes, and Linear Regression models",
+      "Segment customers with K-Means clustering"
+    ],
+    "role": "Individual project. Analyzed the dataset, handled preprocessing including nominal and numeric type conversion, built and compared the models, and applied K-Means clustering for customer segmentation.",
+    "process": [
+      {
+        "title": "Preprocessing",
+        "text": "Including nominal and numeric type conversion."
+      },
+      {
+        "title": "Model building and comparison",
+        "text": "Decision Tree, Naive Bayes, and Linear Regression."
+      },
+      {
+        "title": "Customer segmentation",
+        "text": "K-Means clustering."
+      }
+    ],
+    "outcome": "The best-performing model reached 80–90% accuracy, and K-Means clustering was applied for customer segmentation.",
+    "results": [
+      {
+        "value": "80–90%",
+        "label": "Accuracy of the best-performing model",
+        "kind": "measured"
+      }
+    ]
+  },
+  "ai-integrated-learning-student-innovation-readiness": {
+    "projectType": "Research project",
+    "team": "4-person research team",
+    "background": "An explanatory sequential mixed-methods study, analyzed with PLS-SEM in SmartPLS.",
+    "problem": "How does **AI-integrated learning** shape students' readiness for innovation?",
+    "objectives": [
+      "Investigate how AI-integrated learning shapes student readiness for innovation"
+    ],
+    "role": "A four-person research team. The team investigated the research question, simplified the original model after identifying discriminant validity issues, and prepared the manuscript to MDPI Systems journal submission standards.",
+    "process": [
+      {
+        "title": "Research design",
+        "text": "An explanatory sequential mixed-methods design."
+      },
+      {
+        "title": "Model analysis",
+        "text": "PLS-SEM in SmartPLS. An original 5-construct mediation model was simplified to a 2-predictor direct-effects model after discriminant validity issues were identified."
+      },
+      {
+        "title": "Manuscript",
+        "text": "Prepared to MDPI Systems journal submission standards."
+      }
+    ],
+    "outcome": "Both hypotheses of the simplified model were supported.",
+    "results": [
+      {
+        "value": "R² = 0.597",
+        "label": "Explained variance in the final model",
+        "kind": "measured"
+      },
+      {
+        "value": "2 of 2",
+        "label": "Hypotheses supported",
+        "kind": "measured"
+      }
+    ],
+    "reflection": "The original model had five constructs and a mediation structure. Discriminant validity issues showed up in the analysis, so the model was simplified to two predictors with direct effects. Both resulting hypotheses were supported."
+  }
+}

@@ -1,0 +1,47 @@
+---
+import { getAchievements } from '../lib/sanity.js';
+const items = await getAchievements();
+const fmt = (d) => new Date(d).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+---
+{items.length > 0 && (
+  <section id="achievements">
+    <h2>Achievements</h2>
+    <div class="ach-row" data-ach style={`--n:${items.length}`}>
+      {items.map((a) => (
+        <article class="ach" tabindex="0">
+          {a.photo && <img class="ach-bg" src={a.photo} alt="" loading="lazy" style={`object-position:${a.pos}`} />}
+          <div class="ach-shade"></div>
+          <div class="ach-top">
+            {a.badge ? <img class="ach-badge" src={a.badge} alt={a.rank} /> : <span class="rank">{a.rank}</span>}
+          </div>
+          <div class="ach-body">
+            <div class="ach-compact" aria-hidden="true">
+              <h3>{a.title}</h3>
+              <p class="org">{a.organizer}</p>
+              <time>{fmt(a.date)}</time>
+            </div>
+            <div class="ach-full">
+              <h3>{a.title}</h3>
+              <p class="org">{a.organizer}</p>
+              <time>{fmt(a.date)}</time>
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+  </section>
+)}
+<script>
+  // touch / narrow screens: tap a card to expand it, tap again to close
+  const row = document.querySelector<HTMLElement>('[data-ach]');
+  if (row) {
+    const cards = [...row.querySelectorAll<HTMLElement>('.ach')];
+    const compact = matchMedia('(max-width: 900px), (hover: none)');
+    cards.forEach((card) => card.addEventListener('click', () => {
+      if (!compact.matches) return;
+      const open = !card.classList.contains('open');
+      cards.forEach((c) => { c.classList.remove('open'); c.setAttribute('aria-expanded', 'false'); });
+      if (open) { card.classList.add('open'); card.setAttribute('aria-expanded', 'true'); }
+    }));
+  }
+</script>

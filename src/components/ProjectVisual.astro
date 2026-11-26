@@ -1,0 +1,39 @@
+---
+// The project image area. With a real image it fills the frame; without one it shows an intentional
+// placeholder (fine grid, abstract motif, oversized number). The frame never changes when the image is added.
+const { p, n, sizes = '50vw', eager = false, alt = p.title } = Astro.props;
+const raw = p.rawImages && p.rawImages[0];
+const text = `${p.title} ${p.type} ${(p.tags || []).join(' ')}`.toLowerCase();
+const motif = /automation|workflow|n8n|architecture/.test(text) ? 'flow'
+  : /research|survey|\bpls\b|study/.test(text) ? 'scatter'
+  : /\b(ui|ux)\b|web|interface|figma|wireframe/.test(text) ? 'wire'
+  : /data|analytic|machine|predict|regression|\bai\b|\bml\b|mining/.test(text) ? 'bars' : 'grid';
+const src = (u, w) => `${u}?w=${w}&auto=format`;
+const srcset = (u) => [600, 1000, 1600].map((w) => `${src(u, w)} ${w}w`).join(', ');
+---
+<div class="pjx-vis">
+  {raw ? (
+    <img class="pjx-img" src={src(raw, 1000)} srcset={srcset(raw)} sizes={sizes} alt={alt} loading={eager ? 'eager' : 'lazy'} decoding="async" />
+  ) : (
+    <div class="pjx-ph" aria-hidden="true">
+      {motif === 'bars' && (
+        <svg class="pjx-motif" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"><g fill="rgba(255,255,255,.12)"><rect x="70" y="170" width="28" height="90"/><rect x="118" y="140" width="28" height="120"/><rect x="166" y="155" width="28" height="105"/><rect x="214" y="105" width="28" height="155"/><rect x="262" y="125" width="28" height="135"/><rect x="310" y="80" width="28" height="180"/></g><polyline points="84,150 132,118 180,132 228,82 276,100 324,56" fill="none" stroke="#F59E0B" stroke-width="2"/><circle cx="324" cy="56" r="4" fill="#F59E0B"/></svg>
+      )}
+      {motif === 'flow' && (
+        <svg class="pjx-motif" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"><g fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.5"><rect x="40" y="120" width="70" height="44" rx="4"/><rect x="165" y="60" width="70" height="44" rx="4"/><rect x="165" y="180" width="70" height="44" rx="4"/><rect x="290" y="120" width="70" height="44" rx="4"/><path d="M110 142H138V82H165M110 142H138V202H165M235 82H262V142H290M235 202H262V142H290"/></g><rect x="290" y="120" width="70" height="44" rx="4" fill="none" stroke="#F59E0B" stroke-width="2"/></svg>
+      )}
+      {motif === 'scatter' && (
+        <svg class="pjx-motif" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"><g fill="rgba(255,255,255,.4)"><circle cx="80" cy="220" r="4"/><circle cx="120" cy="190" r="4"/><circle cx="150" cy="205" r="4"/><circle cx="190" cy="160" r="4"/><circle cx="215" cy="175" r="4"/><circle cx="250" cy="130" r="4"/><circle cx="285" cy="145" r="4"/><circle cx="320" cy="95" r="4"/></g><line x1="70" y1="225" x2="335" y2="85" stroke="#F59E0B" stroke-width="2"/></svg>
+      )}
+      {motif === 'wire' && (
+        <svg class="pjx-motif" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"><g fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.5"><rect x="60" y="50" width="280" height="200" rx="6"/><line x1="60" y1="82" x2="340" y2="82"/><rect x="80" y="104" width="120" height="70" rx="3"/><rect x="214" y="104" width="106" height="30" rx="3"/><rect x="214" y="144" width="106" height="30" rx="3"/><rect x="80" y="190" width="240" height="40" rx="3"/></g><circle cx="76" cy="66" r="3" fill="#F59E0B"/></svg>
+      )}
+      {motif === 'grid' && (
+        <svg class="pjx-motif" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"><g fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.5"><rect x="90" y="60" width="220" height="180"/><rect x="130" y="95" width="140" height="110"/><line x1="90" y1="60" x2="130" y2="95"/><line x1="310" y1="60" x2="270" y2="95"/><line x1="90" y1="240" x2="130" y2="205"/><line x1="310" y1="240" x2="270" y2="205"/></g></svg>
+      )}
+      <span class="pjx-ph-k">{p.type}</span>
+      <span class="pjx-ph-n">{n}</span>
+    </div>
+  )}
+  <span class="pjx-shade" aria-hidden="true"></span>
+</div>

@@ -1,0 +1,175 @@
+---
+import { readdirSync } from 'node:fs';
+import Layout from '../layouts/Layout.astro';
+import site from '../data/site.json';
+import about from '../data/about.json';
+import extra from '../data/about-extra.json';
+import { getProjects } from '../lib/sanity.js';
+
+// Files dropped into public/: "cv.*" = Download CV button, "about-photo.*" = hero portrait,
+// "about-journey.*" = photo in My Journey, "about-personal.*" = photo in Beyond the Professional Side.
+let pub = [];
+try { pub = readdirSync('public'); } catch {}
+const find = (name) => pub.find((f) => f.replace(/\.[^.]+$/, '').toLowerCase() === name);
+const url = (f) => `/${encodeURIComponent(f)}`;
+const cvFile = find('cv');
+if (!cvFile) console.warn('[about] CV not found: put cv.pdf in public/ to show the Download CV button');
+const cv = cvFile ? url(cvFile) : '';
+const photoFile = find('about-photo');
+const photo = photoFile ? url(photoFile) : about.hero.photo;
+const personalFile = find('about-personal');
+
+// Logos are found by name in public/tools/ ("Figma Logo H.png" matches "Figma"); an item in about.json may also set its own "logo".
+let toolFiles = [];
+try { toolFiles = readdirSync('public/tools'); } catch { console.warn('[about] public/tools/ not found'); }
+const clean = (x) => x.toLowerCase().replace(/\blogo\b/g, '').replace(/\bh\b/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+const stem = (f) => f.replace(/\.[^.]+$/, '');
+const logoOf = (t) => {
+  if (t.logo) return t.logo;
+  const name = clean(t.name);
+  const hit = toolFiles.find((f) => clean(stem(f)) === name)
+    ?? toolFiles.find((f) => { const c = clean(stem(f)); return c && ` ${name} `.includes(` ${c} `); });
+  return hit ? `/tools/${encodeURIComponent(hit)}` : '';
+};
+
+// My Journey visual: your own photo if present, otherwise the cover of one of your real projects
+let journey = null;
+const jFile = find('about-journey');
+if (jFile) journey = { src: url(jFile), alt: 'A moment from my journey', caption: 'My journey', href: '' };
+else {
+  try {
+    const p = (await getProjects()).find((x) => x.rawImages && x.rawImages[0]);
+    if (p) journey = { src: `${p.rawImages[0]}?w=1200&auto=format`, srcset: [600, 1000, 1600].map((w) => `${p.rawImages[0]}?w=${w}&auto=format ${w}w`).join(', '), alt: p.title, caption: `From my projects: ${p.title}`, href: `/projects/${p.slug}` };
+  } catch { /* no visual without data */ }
+}
+
+const interests = about.interests ?? [];
+const pad = (n) => String(n).padStart(2, '0');
+---
+<Layout title={`About me · ${site.name}`}>
+  <div class="about" data-about>
+
+    <!-- 01 HERO -->
+    <header class="ab-hero rv">
+      <div class="ab-hero-bg" aria-hidden="true"><span class="g1">{extra.phrases[0]}</span><span class="g2">{extra.phrases[1]}</span></div>
+      <div class="ab-hero-text">
+        <p class="ab-label"><i></i>About me</p>
+        <h1>{about.hero.greeting} <span>{about.hero.name}</span></h1>
+        <p class="ab-sub">{about.hero.title}</p>
+        <p class="ab-intro">{about.hero.intro}</p>
+        <div class="ab-actions">
+          {cv && <a class="pill invert light" href={cv} download>Download CV</a>}
+          <a class="pill glass" href="/projects">Explore My Work</a>
+        </div>
+      </div>
+      <figure class="ab-portrait">
+        <div class="ab-frame"><img src={photo} alt={`Portrait of ${about.hero.fullName}`} onerror="this.style.display='none'" /></div>
+        <figcaption>{about.hero.fullName}</figcaption>
+      </figure>
+    </header>
+
+    <!-- 02 MY JOURNEY -->
+    <section class="ab-sec ab-journey" aria-labelledby="j-h">
+      <div class="ab-j-left rv">
+        <span class="ab-num">02</span>
+        <h2 id="j-h">{about.story.heading}</h2>
+        <p class="ab-statement">{extra.journeyStatement}</p>
+        <div class="ab-year" aria-hidden="true"><b>{extra.journeyYear}</b><span>{extra.journeyYearLabel}</span></div>
+      </div>
+      <div class="ab-j-right">
+        <div class="ab-story rv">
+          {about.story.paragraphs.map((p) => <p>{p.split('**').map((s, i) => (i % 2 ? <strong class="em">{s}</strong> : s))}</p>)}
+        </div>
+        {journey && (
+          <figure class="ab-j-fig rv">
+            {journey.href ? <a href={journey.href}><img src={journey.src} srcset={journey.srcset} sizes="(min-width: 900px) 50vw, 100vw" alt={journey.alt} loading="lazy" decoding="async" /></a> : <img src={journey.src} alt={journey.alt} loading="lazy" decoding="async" />}
+            <figcaption>{journey.caption}</figcaption>
+          </figure>
+        )}
+      </div>
+    </section>
+
+    <!-- 03 SKILLS -->
+    <section class="ab-sec ab-skills" aria-labelledby="s-h">
+      <header class="ab-sec-head rv"><span class="ab-num">03</span><h2 id="s-h">Skills &amp; Expertise</h2></header>
+      <div class="ab-cols">
+        {about.skills.map((g, i) => (
+          <div class="ab-col rv" style={`--d:${i * 0.08}s`}>
+            <span class="ab-big" aria-hidden="true">{pad(i + 1)}</span>
+            <p class="ab-cat">{pad(i + 1)} / {pad(about.skills.length)}</p>
+            <h3>{g.title}</h3>
+            <ul>{g.items.map((s) => <li><b>{s.name}</b><span>{s.note}</span></li>)}</ul>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- 04 TOOLS -->
+    <section class="ab-band ab-tools" aria-labelledby="t-h">
+      <div class="ab-tools-head rv">
+        <span class="ab-num">04</span>
+        <h2 id="t-h">{extra.toolsHeading}</h2>
+        <p>{extra.toolsText}</p>
+      </div>
+      <div class="ab-tool-rows">
+        {about.toolGroups.map((g) => (
+          <div class="ab-tool-row rv">
+            <h3>{g.title}</h3>
+            <ul>{g.items.map((t) => <li class="ab-tool">{logoOf(t) ? <img src={logoOf(t)} alt={t.name} loading="lazy" onerror="this.outerHTML=this.alt" /> : <span>{t.name}</span>}</li>)}</ul>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- 05 EDUCATION -->
+    <section class="ab-sec ab-edu" aria-labelledby="e-h">
+      <header class="ab-edu-head rv"><span class="ab-num">05</span><h2 id="e-h">Education</h2></header>
+      <ol class="ab-timeline rv">
+        {about.education.map((e) => (
+          <li>
+            <h3>{e.institution}</h3>
+            <p class="ab-prog">{e.program}</p>
+            <p class="ab-when">{[e.status, e.period].filter(Boolean).join(' · ')}</p>
+            {e.detail && <p class="ab-det">{e.detail}</p>}
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <!-- 06 BEYOND THE PROFESSIONAL SIDE (appears once "interests" in about.json is filled) -->
+    {interests.length > 0 && (
+      <section class="ab-sec ab-beyond" aria-labelledby="b-h">
+        {personalFile && <figure class="ab-b-fig rv"><img src={url(personalFile)} alt="A more personal side of me" loading="lazy" decoding="async" /></figure>}
+        <div class={`ab-b-text rv${personalFile ? '' : ' wide'}`}>
+          <span class="ab-num">06</span>
+          <h2 id="b-h">{extra.beyondHeading}</h2>
+          <ul>{interests.map((i) => <li><b>{i.name}</b><span>{i.text}</span></li>)}</ul>
+        </div>
+      </section>
+    )}
+
+    <!-- 07 CLOSING CTA -->
+    <section class="ab-band ab-cta" aria-labelledby="c-h">
+      <div class="ab-cta-in rv">
+        <p class="ab-label light"><i></i>07 / Contact</p>
+        <h2 id="c-h">{extra.ctaHeading}</h2>
+        <p class="ab-cta-text">{extra.ctaText}</p>
+        <div class="ab-actions">
+          <a class="pill invert light" href="/projects">Explore My Projects</a>
+          <a class="pill glass" href="/contact">Get in Touch</a>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</Layout>
+<script>
+  const root = document.querySelector<HTMLElement>('[data-about]');
+  if (root && 'IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    root.classList.add('rv-ready');
+    const io = new IntersectionObserver((entries) => entries.forEach((e) => {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    }), { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    root.querySelectorAll('.rv').forEach((el) => io.observe(el));
+  }
+</script>

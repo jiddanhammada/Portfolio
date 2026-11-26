@@ -1,0 +1,17 @@
+---
+import ProjectVisual from './ProjectVisual.astro';
+const { p, n, variant = 'wide' } = Astro.props;
+const year = new Date(p.date).getFullYear();
+const num = String(n).padStart(2, '0');
+const sizes = { lead: '(min-width: 900px) 58vw, 100vw', wide: '(min-width: 900px) 52vw, 100vw', narrow: '(min-width: 900px) 36vw, 100vw', row: '(min-width: 900px) 55vw, 100vw' }[variant];
+---
+<a class={`pjx-tile ${variant}`} href={`/projects/${p.slug}`} data-cat={p.type}>
+  <ProjectVisual p={p} n={num} sizes={sizes} eager={variant === 'lead'} />
+  <div class="pjx-info">
+    <p class="pjx-meta"><b>{num}</b><span>{p.type} · {year}</span>{p.featured && <em>Featured</em>}</p>
+    <h3>{p.title}</h3>
+    <p class="pjx-desc">{p.caption}</p>
+    {p.tags && p.tags.length > 0 && <p class="pjx-tags">{p.tags.slice(0, 3).join(' · ')}</p>}
+    <span class="pjx-link">View case study <i aria-hidden="true">↗</i></span>
+  </div>
+</a>

@@ -1,0 +1,65 @@
+[
+  {
+    "company": "Gala Mitra Abadi Bank",
+    "position": "Administrator and Data Entry Clerk",
+    "period": "Aug 2021 – May 2022",
+    "logo": "",
+    "photo": "",
+    "about": "A local bank in Purwodadi City, Grobogan, Central Java, Indonesia with a net worth of over $6 million USD.",
+    "duties": [
+      "Managed client documents (e.g., loan documents, land certificates, vehicle titles) to ensure accurate record-keeping.",
+      "Organized pawns for new and existing clients to facilitate secure transactions.",
+      "Ensured all loan requirements were met and checked documents for errors to maintain compliance and accuracy.",
+      "Notified account officers of missing document requirements, and provided them with necessary documents."
+    ]
+  },
+  {
+    "company": "DIP Outsource Web Design Services",
+    "position": "Freelance Graphic Designer",
+    "period": "Jul 2022 – Feb 2023",
+    "logo": "",
+    "photo": "",
+    "about": "A top-rated web design and virtual assistant service in the Philippines, serving businesses in the US and UK.",
+    "duties": [
+      "Created 65 videos (long and short) as well as the thumbnails, generating an average of 4,143 views across platforms (YouTube, TikTok, etc.) to increase audience engagement and brand visibility.",
+      "Wrote and scheduled 138 articles to maintain a consistent content flow and improve SEO rankings.",
+      "Designed social media posts to enhance online presence and attract followers."
+    ]
+  },
+  {
+    "company": "PT Global Talentlytica Indonesia",
+    "position": "Your position",
+    "period": "Jul 2023 – Dec 2023",
+    "logo": "Logo Talentlytica Box",
+    "photo": "Talentlytica BG",
+    "about": "A startup providing talent assessment tools and consultancy services.",
+    "duties": [
+      "Supported branding and communication efforts with professional visual content that explains complex information simply.",
+      "Designed website assets, social media visuals, and event posters."
+    ]
+  },
+  {
+    "company": "Al Ahmadi Entrepreneurship Centre",
+    "position": "Your position",
+    "period": "Apr 2024 – Nov 2025",
+    "logo": "Logo AEC Box",
+    "photo": "AEC BG",
+    "about": "A company focused on entrepreneurship education and business development.",
+    "duties": [
+      "Strengthened brand presence and supported communication across digital platforms.",
+      "Created daily educational content, marketing materials, and event promotions."
+    ]
+  },
+  {
+    "company": "BINUS Online",
+    "position": "Your position",
+    "period": "Jan 2025 – Nov 2025",
+    "logo": "Logo Binus Normal",
+    "photo": "BION BG",
+    "about": "An extended branch of BINUS University providing ICT-based online education programs.",
+    "duties": [
+      "Supported the marketing team in promoting educational programs and brand presentation.",
+      "Developed promotional graphics and visual materials for academic marketing communication."
+    ]
+  }
+]

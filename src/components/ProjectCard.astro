@@ -1,0 +1,21 @@
+---
+import Carousel from './Carousel.astro';
+const { title, type, date, period, caption, images, slug, tags = [] } = Astro.props;
+const d = new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const [main, ...rest] = title.split(' — ');
+const sub = rest.join(' — ');
+---
+<article class="card pcard">
+  <div class="pframe">
+    <div class="pleft">
+      <div class="pbody">
+        <div class="meta"><span class="chip"><i class="dot"></i>{type}</span><span>{period || d}</span></div>
+        <h3>{main}{sub && <span class="t-sub">{sub}</span>}</h3>
+        <p>{caption}</p>
+        {tags && tags.length > 0 && <div class="ptags">{tags.map((t) => <span class="ptag">{t}</span>)}</div>}
+      </div>
+      <a class="pbtn" href={`/projects/${slug}`}>View project details <span>→</span></a>
+    </div>
+    <div class="pright"><Carousel images={images} interval={6000} /></div>
+  </div>
+</article>
