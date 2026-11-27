@@ -3,13 +3,19 @@ import Layout from '../../layouts/Layout.astro';
 import site from '../../data/site.json';
 import defaults from '../../data/case-studies.json';
 import ProjectVisual from '../../components/ProjectVisual.astro';
+import ProjectTile from '../../components/ProjectTile.astro';
+import RichText from '../../components/RichText.astro';
 import { getProjects } from '../../lib/sanity.js';
 
 export async function getStaticPaths() {
   const projects = (await getProjects()).filter((p) => p.slug);
-  return projects.map((p, i) => ({ params: { slug: p.slug }, props: { p, prev: projects[i - 1] ?? null, next: projects[i + 1] ?? null, index: i } }));
+  return projects.map((p, i) => {
+    const others = projects.map((x, j) => ({ ...x, _n: j + 1 })).filter((x) => x.slug !== p.slug);
+    const related = [...others.filter((x) => x.type === p.type), ...others.filter((x) => x.type !== p.type)].slice(0, 3);
+    return { params: { slug: p.slug }, props: { p, prev: projects[i - 1] ?? null, next: projects[i + 1] ?? null, index: i, related } };
+  });
 }
-const { p, prev, next, index } = Astro.props;
+const { p, prev, next, index, related } = Astro.props;
 
 // Case-study content: starter text from src/data/case-studies.json, overridden field by field by whatever is filled in Sanity.
 const has = (v) => (Array.isArray(v) ? v.length > 0 : v !== null && v !== undefined && String(v).trim() !== '');
@@ -21,6 +27,8 @@ const pad = (n) => String(n).padStart(2, '0');
 const src = (u, w) => `${u}?w=${w}&auto=format`;
 const srcset = (u, ws) => ws.map((w) => `${src(u, w)} ${w}w`).join(', ');
 const paras = (t) => String(t || '').split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean);
+const hasDash = (t) => /(^|\n)\s*[-–•]\s+|[.:;!?]\s+[-–•]\s+\S/.test(String(t || ''));
+const bullets = (t) => paras(t).flatMap((x) => x.split(/(?<=[.!?])\s+(?=[A-Z])/)).map((s) => s.trim()).filter(Boolean);
 const segs = (t) => String(t).split('**');
 const KIND = { measured: 'Measured result', expected: 'Expected benefit', qualitative: 'Finding', deliverable: 'Deliverable' };
 const status = p.status === 'ongoing' ? 'Ongoing' : 'Completed';
@@ -30,9 +38,6 @@ const meta = [
   ['My role', cs.roleShort],
   ['Duration', p.period || String(year)],
   ['Team', cs.team],
-  ['Tools & technologies', (p.tags || []).join(' · ')],
-  ['Category', p.type],
-  ['Status', status],
 ].filter(([, v]) => has(v));
 
 // "details" is the older summary field: shown only when no overview or role exists
@@ -42,13 +47,15 @@ const summary = (() => {
   return { lines: head.split('\n').map((s) => s.trim()).filter(Boolean), bullets: rest.join('\n').split('\n').map((s) => s.replace(/^[•-]\s*/, '').trim()).filter(Boolean) };
 })();
 
-const hasContext = has(cs.background) || has(cs.objectives) || has(cs.successCriteria);
+const hasOverview = has(cs.overview) || has(cs.background) || has(cs.problem) || has(cs.problemPoints) || has(cs.objectives) || has(cs.successCriteria) || !!summary;
 const hasResults = has(cs.results) || has(cs.outcome) || has(cs.outcomeImage);
 const hasReflection = has(cs.reflection) || has(cs.limitations) || has(cs.nextSteps) || has(cs.skills);
 const timeline = cs.timeline || [];
 const process = cs.process || [];
+const results = cs.results || [];
+// the strongest measured result gets the large card
+const lead = results.findIndex((r) => has(r.value) && (r.kind || 'measured') === 'measured');
 const raw = p.rawImages || [];
-const hero = raw[0];
 
 // gallery layout: wide first image, then unequal pairs; every photo keeps its own proportions
 const dims = p.imageDims || [];
@@ -60,7 +67,6 @@ const gallery = (() => {
     const left = items.length - i;
     let widths = k === 0 || left === 1 ? [12] : k % 2 === 1 ? [7, 5] : [5, 7];
     const row = items.slice(i, i + widths.length);
-    // in a pair, the portrait photo takes the narrower column
     if (row.length === 2 && row[0].portrait !== row[1].portrait) widths = row[0].portrait ? [5, 7] : [7, 5];
     const w = row.length === widths.length ? widths : [12];
     row.forEach((it, j) => out.push({ ...it, span: w[j] }));
@@ -70,27 +76,25 @@ const gallery = (() => {
 })();
 
 const toc = [
-  ['overview', 'Overview', true],
-  ['challenge', 'The Challenge', has(cs.problem)],
-  ['context', 'Context & Objectives', hasContext],
-  ['approach', 'Approach', process.length > 0],
-  ['timeline', 'Timeline', timeline.length > 0],
-  ['results', 'Results', hasResults],
+  ['overview', 'Overview', hasOverview],
+  ['contributions', 'My contributions', has(cs.role)],
+  ['process', 'Process and timeline', process.length > 0 || timeline.length > 0],
+  ['results', 'Results and impact', hasResults],
   ['reflection', 'Reflection', hasReflection],
-  ['gallery', 'Gallery', gallery.length > 0 || raw.length > 1],
+  ['gallery', 'Gallery', gallery.length > 0],
 ].filter((t) => t[2]);
-let n = 0;
-const num = () => pad(++n);
 ---
 <Layout title={`${p.title} · ${site.name}`}>
-  <link slot="head" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,300;0,400;0,500;1,400&display=swap" />
   <article class="case" data-case>
 
     <header class="cs-hero rv">
-      <a class="cs-back" href="/projects">← Selected Projects</a>
-      <p class="cs-kick"><b>{p.type}</b><span>{year}</span><span>{status}</span></p>
+      <a class="cs-back" href="/projects">← Selected projects</a>
+      <p class="cs-kick"><span class="chip"><i class="dot"></i>{p.type}</span><span>{status}</span></p>
       <h1>{p.title}</h1>
       <p class="cs-lead">{p.caption}</p>
+      {meta.length > 0 && <dl class="cs-meta">{meta.map(([k, v]) => <div><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}
+      {has(p.tags) && <ul class="cs-chips" aria-label="Tools and technologies">{p.tags.map((t) => <li>{t}</li>)}</ul>}
+      {p.links && p.links.length > 0 && <p class="cs-links">{p.links.map((l) => <a class="pill invert" href={l.url} target="_blank" rel="noopener">{l.label} ↗</a>)}</p>}
       <figure class="cs-hero-img">
         <ProjectVisual p={p} n={pad(index + 1)} sizes="100vw" eager={true} />
       </figure>
@@ -103,97 +107,90 @@ const num = () => pad(++n);
 
       <div class="cs-main">
 
-        <!-- OVERVIEW -->
-        <section class="cs-sec rv" id="overview" aria-labelledby="h-overview">
-          <header class="cs-sec-head"><span>{num()}</span><h2 id="h-overview">Overview</h2></header>
-          <dl class="cs-meta-grid">{meta.map(([k, v]) => <div><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
-          {has(cs.overview) && <div class="cs-text">{paras(cs.overview).map((t) => <p>{segs(t).map((x, i) => (i % 2 ? <strong>{x}</strong> : x))}</p>)}</div>}
-          {has(cs.role) && (
-            <div class="cs-role"><h3>My role &amp; contributions</h3><div class="cs-text">{paras(cs.role).map((t) => <p>{t}</p>)}</div></div>
-          )}
-          {summary && (
-            <div class="cs-role">
-              <h3>Project summary</h3>
-              {summary.lines.map((l) => <p class="cs-ctx">{l}</p>)}
-              {summary.bullets.length > 0 && <ul class="cs-list">{summary.bullets.map((b) => <li>{b}</li>)}</ul>}
-            </div>
-          )}
-          {p.links && p.links.length > 0 && <p class="cs-links">{p.links.map((l) => <a class="pill invert" href={l.url} target="_blank" rel="noopener">{l.label} ↗</a>)}</p>}
-        </section>
-
-        <!-- THE CHALLENGE -->
-        {has(cs.problem) && (
-          <section class="cs-sec cs-challenge rv" id="challenge" aria-labelledby="h-challenge">
-            <header class="cs-sec-head"><span>{num()}</span><h2 id="h-challenge">The Challenge</h2></header>
-            <div class="cs-text">{paras(cs.problem).map((t) => <p>{segs(t).map((x, i) => (i % 2 ? <strong>{x}</strong> : x))}</p>)}</div>
-            {has(cs.problemPoints) && <ul class="cs-list">{cs.problemPoints.map((b) => <li>{b}</li>)}</ul>}
-          </section>
-        )}
-
-        <!-- CONTEXT & OBJECTIVES -->
-        {hasContext && (
-          <section class="cs-sec rv" id="context" aria-labelledby="h-context">
-            <header class="cs-sec-head"><span>{num()}</span><h2 id="h-context">Understanding the Context</h2></header>
-            <div class="cs-two">
-              <div>
-                <h3>Background</h3>
-                {has(cs.background) ? <div class="cs-text">{paras(cs.background).map((t) => <p>{t}</p>)}</div> : <p class="cs-ctx">—</p>}
+        {hasOverview && (
+          <section class="cs-sec rv" id="overview" aria-labelledby="h-overview">
+            <h2 id="h-overview">Overview</h2>
+            {has(cs.overview) && <div class="cs-text cs-intro"><RichText text={cs.overview} /></div>}
+            {summary && (
+              <div class="cs-intro">
+                {summary.lines.map((l) => <p class="cs-ctx">{l}</p>)}
+                {summary.bullets.length > 0 && <ul class="cs-list">{summary.bullets.map((b) => <li>{b}</li>)}</ul>}
               </div>
-              <div>
-                {has(cs.objectives) && (<><h3>Objectives</h3><ul class="cs-list">{cs.objectives.map((o) => <li>{o}</li>)}</ul></>)}
-                {has(cs.successCriteria) && (<><h3 class="gap">Success criteria</h3><ul class="cs-list">{cs.successCriteria.map((o) => <li>{o}</li>)}</ul></>)}
-              </div>
+            )}
+            <div class="cs-cols">
+              {has(cs.background) && <div><h3>Background</h3><div class="cs-text"><RichText text={cs.background} /></div></div>}
+              {(has(cs.problem) || has(cs.problemPoints)) && (
+                <div>
+                  <h3>Challenge</h3>
+                  {has(cs.problem) && <div class="cs-text"><RichText text={cs.problem} /></div>}
+                  {has(cs.problemPoints) && <ul class="cs-list">{cs.problemPoints.map((b) => <li>{b}</li>)}</ul>}
+                </div>
+              )}
+              {(has(cs.objectives) || has(cs.successCriteria)) && (
+                <div>
+                  {has(cs.objectives) && (<><h3>Objectives</h3><ul class="cs-list">{cs.objectives.map((o) => <li>{o}</li>)}</ul></>)}
+                  {has(cs.successCriteria) && (<><h3 class="gap">Success criteria</h3><ul class="cs-list">{cs.successCriteria.map((o) => <li>{o}</li>)}</ul></>)}
+                </div>
+              )}
             </div>
           </section>
         )}
 
-        <!-- APPROACH -->
-        {process.length > 0 && (
-          <section class="cs-sec rv" id="approach" aria-labelledby="h-approach">
-            <header class="cs-sec-head"><span>{num()}</span><h2 id="h-approach">From Problem to Solution</h2></header>
-            <ol class={`cs-flow${process.length > 6 ? ' vertical' : ''}`}>
-              {process.map((s, i) => (
-                <li>
-                  <span class="cs-flow-n">{pad(i + 1)}</span>
-                  <h3>{s.title}</h3>
-                  {s.text && <p>{s.text}</p>}
-                  {s.image && <img src={src(s.image, 900)} srcset={srcset(s.image, [500, 900, 1400])} sizes="(min-width: 900px) 30vw, 90vw" alt={`${s.title}: visual evidence`} loading="lazy" decoding="async" />}
-                </li>
-              ))}
-            </ol>
+        {has(cs.role) && (
+          <section class="cs-sec rv" id="contributions" aria-labelledby="h-contributions">
+            <h2 id="h-contributions">My contributions</h2>
+            {hasDash(cs.role) ? <div class="cs-text"><RichText text={cs.role} /></div> : <ul class="cs-list">{bullets(cs.role).map((b) => <li>{b}</li>)}</ul>}
           </section>
         )}
 
-        <!-- TIMELINE -->
-        {timeline.length > 0 && (
-          <section class="cs-sec rv" id="timeline" aria-labelledby="h-timeline">
-            <header class="cs-sec-head"><span>{num()}</span><h2 id="h-timeline">Project Timeline</h2></header>
-            <ol class={`cs-flow cs-time${timeline.length > 5 ? ' vertical' : ''}`}>
-              {timeline.map((t) => (
-                <li>
-                  <span class="cs-flow-n">{t.when}</span>
-                  <h3>{t.title}</h3>
-                  {t.text && <p>{t.text}</p>}
-                  {t.deliverable && <p class="cs-deliv"><b>Deliverable</b>{t.deliverable}</p>}
-                </li>
-              ))}
-            </ol>
+        {(process.length > 0 || timeline.length > 0) && (
+          <section class="cs-sec rv" id="process" aria-labelledby="h-process">
+            <h2 id="h-process">Process and timeline</h2>
+            {process.length > 0 && (
+              <>
+                {timeline.length > 0 && <h3>Approach</h3>}
+                <ol class={`cs-flow${process.length > 6 ? ' vertical' : ''}`}>
+                  {process.map((s, i) => (
+                    <li>
+                      <span class="cs-flow-n">Step {i + 1}</span>
+                      <h3>{s.title}</h3>
+                      {s.text && <div class="cs-rtext"><RichText text={s.text} /></div>}
+                      {s.image && <img src={src(s.image, 900)} srcset={srcset(s.image, [500, 900, 1400])} sizes="(min-width: 900px) 30vw, 90vw" alt={`${s.title}: visual evidence`} loading="lazy" decoding="async" />}
+                    </li>
+                  ))}
+                </ol>
+              </>
+            )}
+            {timeline.length > 0 && (
+              <>
+                {process.length > 0 && <h3 class="gap">Milestones</h3>}
+                <ol class={`cs-flow cs-time${timeline.length > 5 ? ' vertical' : ''}`}>
+                  {timeline.map((t) => (
+                    <li>
+                      <span class="cs-flow-n">{t.when}</span>
+                      <h3>{t.title}</h3>
+                      {t.text && <div class="cs-rtext"><RichText text={t.text} /></div>}
+                      {t.deliverable && <p class="cs-deliv"><b>Deliverable</b>{t.deliverable}</p>}
+                    </li>
+                  ))}
+                </ol>
+              </>
+            )}
           </section>
         )}
 
-        <!-- RESULTS -->
         {hasResults && (
           <section class="cs-sec rv" id="results" aria-labelledby="h-results">
-            <header class="cs-sec-head"><span>{num()}</span><h2 id="h-results">What We Achieved</h2></header>
-            {has(cs.outcome) && <div class="cs-text">{paras(cs.outcome).map((t) => <p>{t}</p>)}</div>}
-            {has(cs.results) && (
+            <h2 id="h-results">Results and impact</h2>
+            {has(cs.outcome) && <div class="cs-text"><RichText text={cs.outcome} /></div>}
+            {results.length > 0 && (
               <ul class="cs-results">
-                {cs.results.map((r) => (
-                  <li class={has(r.value) ? '' : 'finding'}>
-                    <span class="cs-kind">{KIND[r.kind] || KIND.measured}</span>
+                {results.map((r, i) => (
+                  <li class={`${has(r.value) ? '' : 'finding'}${i === lead ? ' lead' : ''}`.trim()}>
+                    <span class="cs-kind"><i class="dot"></i>{KIND[r.kind] || KIND.measured}</span>
                     {has(r.value) && <b>{r.value}</b>}
                     <span class="cs-res-label">{r.label}</span>
-                    {r.text && <p>{r.text}</p>}
+                    {r.text && <div class="cs-rtext"><RichText text={r.text} /></div>}
                   </li>
                 ))}
               </ul>
@@ -207,25 +204,23 @@ const num = () => pad(++n);
           </section>
         )}
 
-        <!-- REFLECTION -->
         {hasReflection && (
           <section class="cs-sec rv" id="reflection" aria-labelledby="h-reflection">
-            <header class="cs-sec-head"><span>{num()}</span><h2 id="h-reflection">What I Learned</h2></header>
-            {has(cs.reflection) && <div class="cs-text">{paras(cs.reflection).map((t) => <p>{segs(t).map((x, i) => (i % 2 ? <strong>{x}</strong> : x))}</p>)}</div>}
+            <h2 id="h-reflection">Reflection</h2>
+            {has(cs.reflection) && <div class="cs-text"><RichText text={cs.reflection} /></div>}
             {(has(cs.limitations) || has(cs.nextSteps)) && (
               <div class="cs-two cs-after">
-                {has(cs.limitations) && <div><h3>Limitations</h3><div class="cs-text">{paras(cs.limitations).map((t) => <p>{t}</p>)}</div></div>}
-                {has(cs.nextSteps) && <div><h3>Potential improvements</h3><div class="cs-text">{paras(cs.nextSteps).map((t) => <p>{t}</p>)}</div></div>}
+                {has(cs.limitations) && <div><h3>Limitations</h3><div class="cs-text"><RichText text={cs.limitations} /></div></div>}
+                {has(cs.nextSteps) && <div><h3>Potential improvements</h3><div class="cs-text"><RichText text={cs.nextSteps} /></div></div>}
               </div>
             )}
             {has(cs.skills) && <div class="cs-after"><h3>Skills developed</h3><ul class="cs-chips">{cs.skills.map((s) => <li>{s}</li>)}</ul></div>}
           </section>
         )}
 
-        <!-- GALLERY -->
         {gallery.length > 0 && (
           <section class="cs-sec rv" id="gallery" aria-labelledby="h-gallery">
-            <header class="cs-sec-head"><span>{num()}</span><h2 id="h-gallery">Project Gallery</h2></header>
+            <h2 id="h-gallery">Project gallery</h2>
             <div class="cs-gallery">
               {gallery.map((g) => (
                 <figure class={`cs-fig s${g.span}${g.portrait ? ' portrait' : ''}`}>
@@ -242,28 +237,24 @@ const num = () => pad(++n);
       </div>
     </div>
 
-    <!-- MORE PROJECTS -->
-    <nav class="cs-more rv" aria-label="More projects">
-      <p class="cs-more-label">More projects</p>
-      <div class="cs-more-pair">
-        {prev ? (
-          <a class="cs-pn" href={`/projects/${prev.slug}`}>
-            <div class="cs-pn-thumb"><ProjectVisual p={prev} n={pad(index)} alt="" sizes="(min-width: 900px) 30vw, 90vw" /></div>
-            <span>← Previous project</span><b>{prev.title}</b><small>{prev.type}</small>
-          </a>
-        ) : <span></span>}
-        {next ? (
-          <a class="cs-pn next" href={`/projects/${next.slug}`}>
-            <div class="cs-pn-thumb"><ProjectVisual p={next} n={pad(index + 2)} alt="" sizes="(min-width: 900px) 30vw, 90vw" /></div>
-            <span>Next project →</span><b>{next.title}</b><small>{next.type}</small>
-          </a>
-        ) : <span></span>}
-      </div>
+    <footer class="cs-more rv">
+      {(prev || next) && (
+        <nav class="cs-pnbar" aria-label="Previous and next project">
+          {prev ? <a href={`/projects/${prev.slug}`} rel="prev"><small>← Previous project</small><b>{prev.title}</b></a> : <span></span>}
+          {next ? <a class="next" href={`/projects/${next.slug}`} rel="next"><small>Next project →</small><b>{next.title}</b></a> : <span></span>}
+        </nav>
+      )}
+      {related.length > 0 && (
+        <section aria-labelledby="h-related">
+          <h2 id="h-related">Related projects</h2>
+          <div class="cs-rel">{related.map((r) => <ProjectTile p={r} n={r._n} variant="narrow" />)}</div>
+        </section>
+      )}
       <div class="a-actions">
-        <a class="pill invert" href="/projects">Back to Selected Projects</a>
-        <a class="pill" href="/contact">Contact Me</a>
+        <a class="pill invert" href="/projects">Back to selected projects</a>
+        <a class="pill" href="/contact">Contact me</a>
       </div>
-    </nav>
+    </footer>
 
   </article>
 

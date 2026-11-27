@@ -1,0 +1,25 @@
+---
+// Turns text typed in Sanity into paragraphs and bullet lists.
+// A line that starts with "-", "–" or "•" becomes a bullet. A dash that follows sentence punctuation
+// (for example "approaches: - First. - Second.") also starts a new bullet. **double asterisks** stay highlighted.
+const { text } = Astro.props;
+const norm = String(text ?? '')
+  .replace(/\r/g, '')
+  .replace(/(?<=[.:;!?])[ \t]+[-–•][ \t]+(?=\S)/g, '\n- ');
+const bullet = /^\s*[-–•]\s+/;
+const blocks = [];
+for (const para of norm.split(/\n\s*\n/)) {
+  let cur = null;
+  for (const raw of para.split('\n')) {
+    const line = raw.trim();
+    if (!line) continue;
+    const kind = bullet.test(line) ? 'ul' : 'p';
+    if (!cur || cur.kind !== kind) { cur = { kind, items: [] }; blocks.push(cur); }
+    cur.items.push(kind === 'ul' ? line.replace(bullet, '') : line);
+  }
+}
+const parts = (t) => t.split('**');
+---
+{blocks.map((b) => b.kind === 'ul'
+  ? <ul class="cs-list">{b.items.map((i) => <li>{parts(i).map((x, k) => (k % 2 ? <strong>{x}</strong> : x))}</li>)}</ul>
+  : <p>{parts(b.items.join(' ')).map((x, k) => (k % 2 ? <strong>{x}</strong> : x))}</p>)}
